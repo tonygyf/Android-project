@@ -21,6 +21,11 @@ public class Chapter {
     private long endPosition;
     private int chapterIndex;
 
+    // 👉 必须加上一个无参构造方法，给 Room 和 new Chapter() 用
+    public Chapter() {
+    }
+
+    // 👉 这是你原来的构造方法，创建新章节时方便使用
     public Chapter(int bookId, String title, long startPosition, long endPosition, int chapterIndex) {
         this.bookId = bookId;
         this.title = title;
@@ -29,6 +34,7 @@ public class Chapter {
         this.chapterIndex = chapterIndex;
     }
 
+    // Getter 和 Setter
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -39,11 +45,11 @@ public class Chapter {
     public void setTitle(String title) { this.title = title; }
 
     public long getStartPosition() { return startPosition; }
-    public void setStartPosition(long position) { this.startPosition = position; }
+    public void setStartPosition(long startPosition) { this.startPosition = startPosition; }
 
     public long getEndPosition() { return endPosition; }
-    public void setEndPosition(long position) { this.endPosition = position; }
+    public void setEndPosition(long endPosition) { this.endPosition = endPosition; }
 
     public int getChapterIndex() { return chapterIndex; }
-    public void setChapterIndex(int index) { this.chapterIndex = index; }
+    public void setChapterIndex(int chapterIndex) { this.chapterIndex = chapterIndex; }
 }
