@@ -12,16 +12,16 @@
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/nav_gallery"
-        android:name="com.example.myapplication1.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        android:id="@+id/nav_bookshelf"
+        android:name="com.example.myapplication1.ui.bookshelf.BookshelfFragment"
+        android:label="书架"
+        tools:layout="@layout/fragment_bookshelf" />
 
     <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.example.myapplication1.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        android:id="@+id/nav_chapterpreview"
+        android:name="com.example.myapplication1.ui.chapterpreview.ChapterPreviewFragment"
+        android:label="章节预览"
+        tools:layout="@layout/fragment_chapter_preview" />
 
     <fragment
         android:id="@+id/nav_reader"
