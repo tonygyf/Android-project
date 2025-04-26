@@ -73,10 +73,8 @@ public class ReadFragment extends Fragment {
         }
 
         try {
-            // 使用TxtFileParser读取章节内容
             String content;
             if (currentFilePath.startsWith("content:")) {
-                // 处理URI
                 Uri uri = Uri.parse(currentFilePath);
                 content = TxtFileParser.readChapterContentFromUri(
                         uri,
@@ -84,22 +82,21 @@ public class ReadFragment extends Fragment {
                         currentChapter.getStartPosition(),
                         currentChapter.getEndPosition());
             } else {
-                // 处理传统文件路径
                 content = TxtFileParser.readChapterContent(
                         currentFilePath,
                         currentChapter.getStartPosition(),
                         currentChapter.getEndPosition());
             }
-            
+
             binding.textContent.setText(content);
-            
-            // 更新阅读进度
+
             readerViewModel.updateReadingProgress(currentBookId, currentChapter.getStartPosition());
         } catch (Exception e) {
             e.printStackTrace();
             binding.textContent.setText("读取内容出错: " + e.getMessage());
         }
     }
+
 
     private void navigateToPreviousChapter() {
         readerViewModel.getPreviousChapter(currentBookId, currentChapter.getChapterIndex())

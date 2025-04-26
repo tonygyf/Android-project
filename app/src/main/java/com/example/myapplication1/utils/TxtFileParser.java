@@ -29,6 +29,7 @@ public class TxtFileParser {
         }
     }
 
+    // 解析章节，基于字节长度记录
     public static List<ChapterInfo> parseChapters(String filePath) {
         List<ChapterInfo> chapters = new ArrayList<>();
         File file = new File(filePath);
@@ -50,10 +51,10 @@ public class TxtFileParser {
                     lastTitle = line.trim();
                     lastChapterStart = position;
                 }
-                position += line.length() + System.lineSeparator().length();
+                // 用UTF-8字节数
+                position += line.getBytes("UTF-8").length + System.lineSeparator().getBytes("UTF-8").length;
             }
 
-            // 添加最后一章
             if (lastTitle != null) {
                 chapters.add(new ChapterInfo(lastTitle, lastChapterStart, position, chapterIndex));
             }
@@ -64,7 +65,7 @@ public class TxtFileParser {
 
         return chapters;
     }
-    
+
     public static List<ChapterInfo> parseChaptersFromUri(Uri uri, Context context) {
         List<ChapterInfo> chapters = new ArrayList<>();
         if (uri == null) return chapters;
@@ -85,10 +86,9 @@ public class TxtFileParser {
                     lastTitle = line.trim();
                     lastChapterStart = position;
                 }
-                position += line.length() + System.lineSeparator().length();
+                position += line.getBytes("UTF-8").length + System.lineSeparator().getBytes("UTF-8").length;
             }
 
-            // 添加最后一章
             if (lastTitle != null) {
                 chapters.add(new ChapterInfo(lastTitle, lastChapterStart, position, chapterIndex));
             }
@@ -99,65 +99,56 @@ public class TxtFileParser {
 
         return chapters;
     }
-    
+
+    // 按范围读取内容
     public static String readChapterContent(String filePath, long startPosition, long endPosition) {
-        // 检查是否是URI字符串
-        if (filePath.startsWith("content:")) {
-            try {
-                Uri uri = Uri.parse(filePath);
-                return readChapterContentFromUri(uri, null, startPosition, endPosition);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return "读取章节内容出错: " + e.getMessage();
-            }
-        }
-        
-        // 传统文件路径处理
         File file = new File(filePath);
         if (!file.exists()) return "文件不存在";
-        
+
         StringBuilder content = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
-            reader.skip(startPosition);
-            long remainingBytes = endPosition - startPosition;
-            char[] buffer = new char[1024];
-            int read;
-
-            while (remainingBytes > 0 && (read = reader.read(buffer, 0, (int) Math.min(buffer.length, remainingBytes))) != -1) {
-                content.append(buffer, 0, read);
-                remainingBytes -= read;
+            String line;
+            long currentPos = 0;
+            while ((line = reader.readLine()) != null) {
+                long lineByteLength = line.getBytes("UTF-8").length + System.lineSeparator().getBytes("UTF-8").length;
+                if (currentPos >= startPosition && currentPos < endPosition) {
+                    content.append(line).append("\n");
+                }
+                currentPos += lineByteLength;
+                if (currentPos >= endPosition) {
+                    break;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
             return "读取章节内容出错: " + e.getMessage();
         }
-        
         return content.toString();
     }
-    
-    public static String readChapterContentFromUri(Uri uri, Context context, long startPosition, long endPosition) {
-        if (uri == null) return "URI为空";
-        
-        StringBuilder content = new StringBuilder();
-        try (InputStream inputStream = context != null ? 
-                context.getContentResolver().openInputStream(uri) : 
-                new java.net.URL(uri.toString()).openStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
-            reader.skip(startPosition);
-            long remainingBytes = endPosition - startPosition;
-            char[] buffer = new char[1024];
-            int read;
 
-            while (remainingBytes > 0 && (read = reader.read(buffer, 0, (int) Math.min(buffer.length, remainingBytes))) != -1) {
-                content.append(buffer, 0, read);
-                remainingBytes -= read;
+    public static String readChapterContentFromUri(Uri uri, Context context, long startPosition, long endPosition) {
+        if (uri == null || context == null) return "URI或Context为空";
+
+        StringBuilder content = new StringBuilder();
+        try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
+            String line;
+            long currentPos = 0;
+            while ((line = reader.readLine()) != null) {
+                long lineByteLength = line.getBytes("UTF-8").length + System.lineSeparator().getBytes("UTF-8").length;
+                if (currentPos >= startPosition && currentPos < endPosition) {
+                    content.append(line).append("\n");
+                }
+                currentPos += lineByteLength;
+                if (currentPos >= endPosition) {
+                    break;
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
             return "读取章节内容出错: " + e.getMessage();
         }
-        
         return content.toString();
     }
 }
