@@ -2,6 +2,7 @@ package com.example.myapplication1.ui.read;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,8 +20,6 @@ import com.example.myapplication1.databinding.FragmentReadBinding;
 import com.example.myapplication1.ui.reader.ReaderViewModel;
 import com.example.myapplication1.utils.TxtFileParser;
 
-
-
 public class ReadFragment extends Fragment {
 
     private FragmentReadBinding binding;
@@ -29,6 +28,8 @@ public class ReadFragment extends Fragment {
     private int currentBookId;
     private String currentFilePath;
 
+    private int currentTextSize = 16; // 默认字体大小
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         readerViewModel = new ViewModelProvider(requireActivity()).get(ReaderViewModel.class);
@@ -36,8 +37,10 @@ public class ReadFragment extends Fragment {
         binding = FragmentReadBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
+        // 设置按钮的点击事件
         setupNavigation();
         loadChapterContent();
+        setupSettings();
 
         return root;
     }
@@ -89,7 +92,6 @@ public class ReadFragment extends Fragment {
             }
 
             binding.textContent.setText(content);
-
             readerViewModel.updateReadingProgress(currentBookId, currentChapter.getStartPosition());
         } catch (Exception e) {
             e.printStackTrace();
@@ -97,6 +99,40 @@ public class ReadFragment extends Fragment {
         }
     }
 
+    // 设置背景色和字体大小的按钮逻辑
+    private void setupSettings() {
+        // 白底黑字
+        binding.btnWhite.setOnClickListener(v -> {
+            binding.scrollContent.setBackgroundColor(getResources().getColor(android.R.color.white));
+            binding.textContent.setTextColor(getResources().getColor(android.R.color.black));
+        });
+
+        // 绿底黑字
+        binding.btnGreen.setOnClickListener(v -> {
+            binding.scrollContent.setBackgroundColor(getResources().getColor(android.R.color.holo_green_light));
+            binding.textContent.setTextColor(getResources().getColor(android.R.color.black));
+        });
+
+        // 黑底白字
+        binding.btnBlack.setOnClickListener(v -> {
+            binding.scrollContent.setBackgroundColor(getResources().getColor(android.R.color.black));
+            binding.textContent.setTextColor(getResources().getColor(android.R.color.white));
+        });
+
+        // 增加字体大小
+        binding.btnTextsizeIncrease.setOnClickListener(v -> {
+            currentTextSize += 2;  // 每次增加2sp
+            binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, currentTextSize);
+        });
+
+        // 减少字体大小
+        binding.btnTextsizeDecrease.setOnClickListener(v -> {
+            if (currentTextSize > 12) { // 设置最小字体大小为12sp
+                currentTextSize -= 2;  // 每次减少2sp
+                binding.textContent.setTextSize(TypedValue.COMPLEX_UNIT_SP, currentTextSize);
+            }
+        });
+    }
 
     private void navigateToPreviousChapter() {
         readerViewModel.getPreviousChapter(currentBookId, currentChapter.getChapterIndex())
