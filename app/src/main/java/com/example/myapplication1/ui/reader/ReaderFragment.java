@@ -73,12 +73,13 @@ public class ReaderFragment extends Fragment {
         bookshelfViewModel.getSelectedBook().observe(getViewLifecycleOwner(), book -> {
             if (book != null) {
                 readerViewModel.setCurrentBook(book);
-                BookDatabase database = BookDatabase.getDatabase(requireContext());
-                database.bookDao().getChaptersByBookId(book.getId()).observe(getViewLifecycleOwner(), chapters -> {
+                new Thread(() -> {
+                    BookDatabase database = BookDatabase.getDatabase(requireContext());
+                    List<Chapter> chapters = database.bookDao().getChaptersByBookIdSync(book.getId());
                     if (chapters != null && !chapters.isEmpty()) {
                         readerViewModel.setChapters(chapters);
                     }
-                });
+                }).start();
             }
         });
     }

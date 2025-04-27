@@ -38,6 +38,9 @@ public interface BookDao {
     @Query("SELECT * FROM chapters WHERE bookId = :bookId ORDER BY chapterIndex")
     LiveData<List<Chapter>> getChaptersByBookId(int bookId);
     
+    @Query("SELECT * FROM chapters WHERE bookId = :bookId ORDER BY chapterIndex")
+    List<Chapter> getChaptersByBookIdSync(int bookId);
+    
     @Query("SELECT * FROM chapters WHERE bookId = :bookId AND chapterIndex < :currentIndex ORDER BY chapterIndex DESC LIMIT 1")
     Chapter getPreviousChapter(int bookId, int currentIndex);
     

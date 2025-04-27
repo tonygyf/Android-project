@@ -155,10 +155,10 @@ public class ReaderViewModel extends AndroidViewModel {
 
     // 👉 新增两个外部调用方法（用于 Fragment 设置）
     public void setCurrentBook(Book book) {
-        currentBook.setValue(book);
+        currentBook.postValue(book);
     }
 
     public void setChapters(List<Chapter> chapterList) {
-        chapters.setValue(chapterList);
+        chapters.postValue(chapterList);
     }
 }
