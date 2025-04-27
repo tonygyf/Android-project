@@ -2,12 +2,15 @@ package com.example.myapplication1.ui.read;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log; // Import Log class
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.myapplication1.data.Book;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -53,25 +56,77 @@ public class ReadFragment extends Fragment {
 
     private void loadChapterContent() {
         if (getArguments() != null) {
-            currentChapter = new Chapter(
-                    getArguments().getInt("bookId"),
-                    getArguments().getString("title", ""),
-                    getArguments().getLong("startPosition"),
-                    getArguments().getLong("endPosition"),
-                    getArguments().getInt("chapterIndex")
-            );
-            currentChapter.setId(getArguments().getInt("chapterId"));
-            currentBookId = currentChapter.getBookId();
-            currentFilePath = getArguments().getString("filePath", "");
+            // 添加日志打印接收到的 Bundle 内容
+            Log.d("ReadFragment", "Received arguments:");
+            for (String key : getArguments().keySet()) {
+                Log.d("ReadFragment", "Key: " + key + ", Value: " + getArguments().get(key));
+            }
+
+            // 首先尝试从ViewModel获取选中的章节
+            Chapter selectedChapter = readerViewModel.getSelectedChapter().getValue();
+            
+            if (selectedChapter != null) {
+                // 如果ViewModel中有选中的章节，优先使用
+                Log.d("ReadFragment", "Using chapter from ViewModel: " + selectedChapter.getTitle());
+                currentChapter = selectedChapter;
+                currentBookId = currentChapter.getBookId();
+                
+                // 从ViewModel获取当前书籍以获取文件路径
+                Book currentBook = readerViewModel.getCurrentBook().getValue();
+                if (currentBook != null) {
+                    currentFilePath = currentBook.getFilePath();
+                    Log.d("ReadFragment", "Using file path from ViewModel: " + currentFilePath);
+                } else {
+                    // 如果ViewModel中没有书籍信息，则从参数中获取
+                    currentFilePath = getArguments().getString("filePath", "");
+                    Log.d("ReadFragment", "Using file path from arguments: " + currentFilePath);
+                }
+            } else {
+                // 如果ViewModel中没有选中的章节，则从参数中构建
+                Log.d("ReadFragment", "Building chapter from arguments");
+                currentChapter = new Chapter(
+                        getArguments().getInt("bookId"),
+                        getArguments().getString("title", ""),
+                        getArguments().getLong("startPosition"),
+                        getArguments().getLong("endPosition"),
+                        getArguments().getInt("chapterIndex")
+                );
+                currentChapter.setId(getArguments().getInt("chapterId"));
+                currentBookId = currentChapter.getBookId();
+                currentFilePath = getArguments().getString("filePath", "");
+            }
 
             binding.textChapterTitle.setText(currentChapter.getTitle());
             loadTextContent();
+        } else {
+            // 添加日志说明未接收到 arguments
+            Log.d("ReadFragment", "No arguments received, trying to use ViewModel data");
+            
+            // 尝试从ViewModel获取数据
+            Chapter selectedChapter = readerViewModel.getSelectedChapter().getValue();
+            Book currentBook = readerViewModel.getCurrentBook().getValue();
+            
+            if (selectedChapter != null && currentBook != null) {
+                currentChapter = selectedChapter;
+                currentBookId = currentChapter.getBookId();
+                currentFilePath = currentBook.getFilePath();
+                
+                binding.textChapterTitle.setText(currentChapter.getTitle());
+                loadTextContent();
+                Log.d("ReadFragment", "Successfully loaded chapter from ViewModel: " + currentChapter.getTitle());
+            } else {
+                Log.e("ReadFragment", "No arguments and no ViewModel data available");
+                Toast.makeText(getContext(), "无法加载章节内容，请返回重试", Toast.LENGTH_SHORT).show();
+                // 返回上一页
+                Navigation.findNavController(requireView()).navigateUp();
+            }
         }
     }
 
     private void loadTextContent() {
         if (currentFilePath == null || currentFilePath.isEmpty()) {
             binding.textContent.setText("无法加载章节内容，文件路径为空");
+            Log.e("ReadFragment", "File path is null or empty."); // Log error for empty path
             return;
         }
 
@@ -94,8 +149,10 @@ public class ReadFragment extends Fragment {
             binding.textContent.setText(content);
             readerViewModel.updateReadingProgress(currentBookId, currentChapter.getStartPosition());
         } catch (Exception e) {
+            // 修改 catch 块，打印详细的异常信息
+            Log.e("ReadFragment", "Error reading chapter content", e);
             e.printStackTrace();
-            binding.textContent.setText("读取内容出错: " + e.getMessage());
+            binding.textContent.setText("读取内容出错: " + e.getMessage() + "\n详细信息请查看日志");
         }
     }
 

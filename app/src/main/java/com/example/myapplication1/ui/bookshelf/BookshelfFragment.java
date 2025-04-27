@@ -1,6 +1,7 @@
 package com.example.myapplication1.ui.bookshelf;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,7 +26,8 @@ public class BookshelfFragment extends Fragment {
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        bookshelfViewModel = new ViewModelProvider(this).get(BookshelfViewModel.class);
+//        修改这个实例过程，用以使得页面跳转中activity作用域一致
+        bookshelfViewModel = new ViewModelProvider(requireActivity()).get(BookshelfViewModel.class);
 
         binding = FragmentBookshelfBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
@@ -44,6 +46,10 @@ public class BookshelfFragment extends Fragment {
         bookAdapter.setOnBookClickListener(book -> {
             // 选中书籍，跳转到阅读器界面
             bookshelfViewModel.selectBook(book);
+//            增加打印信息
+            Log.d("BookshelfFragment", "Selected book: " + book.getTitle() + ", ID: " + book.getId() + ", FilePath: " + book.getFilePath());
+            // 添加日志打印 LiveData 的值在导航前
+            Log.d("BookshelfFragment", "Selected book LiveData value before navigation: " + bookshelfViewModel.getSelectedBook().getValue());
             Navigation.findNavController(requireView()).navigate(R.id.nav_reader);
         });
     }
