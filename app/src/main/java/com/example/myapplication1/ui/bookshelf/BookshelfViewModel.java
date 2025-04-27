@@ -1,35 +1,45 @@
 package com.example.myapplication1.ui.bookshelf;
 
+import android.app.Application;
+
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
+
+import com.example.myapplication1.data.Book;
+import com.example.myapplication1.data.BookDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BookshelfViewModel extends ViewModel {
-    private MutableLiveData<List<com.example.myapplication1.data.Book>> books;
-    private MutableLiveData<com.example.myapplication1.data.Book> selectedBook;
+public class BookshelfViewModel extends AndroidViewModel {
+    private final BookDatabase database;
+    private final LiveData<List<Book>> books;
+    private final MutableLiveData<Book> selectedBook;
 
-    public BookshelfViewModel() {
-        books = new MutableLiveData<>();
+    public BookshelfViewModel(Application application) {
+        super(application);
+        database = BookDatabase.getDatabase(application);
+        books = database.bookDao().getAllBooks(); // 直接从数据库加载所有书籍
         selectedBook = new MutableLiveData<>();
-        books.setValue(new ArrayList<>()); // 初始化为空列表
     }
 
-    public LiveData<List<com.example.myapplication1.data.Book>> getBooks() {
+    public LiveData<List<Book>> getBooks() {
         return books;
     }
 
-    public LiveData<com.example.myapplication1.data.Book> getSelectedBook() {
+    public LiveData<Book> getSelectedBook() {
         return selectedBook;
     }
 
-    public void setBooks(List<com.example.myapplication1.data.Book> bookList) {
-        books.setValue(bookList);
+    public void selectBook(Book book) {
+        selectedBook.postValue(book);
     }
-
-    public void selectBook(com.example.myapplication1.data.Book book) {
-        selectedBook.setValue(book);
+    
+    public void deleteBook(Book book) {
+        new Thread(() -> {
+            database.bookDao().deleteChaptersByBookId(book.getId());
+            database.bookDao().deleteBook(book);
+        }).start();
     }
 }

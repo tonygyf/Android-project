@@ -19,8 +19,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.myapplication1.R;
 import com.example.myapplication1.data.Book;
-
+import com.example.myapplication1.data.BookDatabase;
+import com.example.myapplication1.data.Chapter;
 import com.example.myapplication1.databinding.FragmentReaderBinding;
+import com.example.myapplication1.ui.bookshelf.BookshelfViewModel;
+
+import java.util.List;
 
 public class ReaderFragment extends Fragment {
 
@@ -35,10 +39,8 @@ public class ReaderFragment extends Fragment {
                     Uri uri = result.getData().getData();
                     if (uri != null) {
                         try {
-                            // 使用ContentResolver获取真实文件路径
-                            String mimeType = getContext().getContentResolver().getType(uri);
+                            String mimeType = requireContext().getContentResolver().getType(uri);
                             if (mimeType != null && mimeType.equals("text/plain")) {
-                                // 直接传递URI给ViewModel，而不是文件路径
                                 readerViewModel.loadBook(uri.toString());
                             } else {
                                 Toast.makeText(getContext(), "请选择TXT文件", Toast.LENGTH_SHORT).show();
@@ -52,7 +54,7 @@ public class ReaderFragment extends Fragment {
             });
 
     public View onCreateView(@NonNull LayoutInflater inflater,
-                            ViewGroup container, Bundle savedInstanceState) {
+                             ViewGroup container, Bundle savedInstanceState) {
         readerViewModel = new ViewModelProvider(requireActivity()).get(ReaderViewModel.class);
 
         binding = FragmentReaderBinding.inflate(inflater, container, false);
@@ -61,8 +63,24 @@ public class ReaderFragment extends Fragment {
         setupRecyclerView();
         setupFileSelection();
         observeViewModel();
+        loadSelectedBook();
 
         return root;
+    }
+
+    private void loadSelectedBook() {
+        BookshelfViewModel bookshelfViewModel = new ViewModelProvider(requireActivity()).get(BookshelfViewModel.class);
+        bookshelfViewModel.getSelectedBook().observe(getViewLifecycleOwner(), book -> {
+            if (book != null) {
+                readerViewModel.setCurrentBook(book);
+                BookDatabase database = BookDatabase.getDatabase(requireContext());
+                database.bookDao().getChaptersByBookId(book.getId()).observe(getViewLifecycleOwner(), chapters -> {
+                    if (chapters != null && !chapters.isEmpty()) {
+                        readerViewModel.setChapters(chapters);
+                    }
+                });
+            }
+        });
     }
 
     private void setupRecyclerView() {

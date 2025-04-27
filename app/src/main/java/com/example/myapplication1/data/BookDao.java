@@ -22,6 +22,9 @@ public interface BookDao {
 
     @Query("SELECT * FROM books")
     LiveData<List<Book>> getAllBooks();
+    
+    @Query("SELECT * FROM books")
+    List<Book> getAllBooksSync();
 
     @Query("SELECT * FROM books WHERE id = :bookId")
     LiveData<Book> getBookById(int bookId);

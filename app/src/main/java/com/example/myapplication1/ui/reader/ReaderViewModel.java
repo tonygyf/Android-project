@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ReaderViewModel extends AndroidViewModel {
+
     private final BookDatabase database;
     private final MutableLiveData<Book> currentBook = new MutableLiveData<>();
     private final MutableLiveData<List<Chapter>> chapters = new MutableLiveData<>(new ArrayList<>());
@@ -32,52 +33,77 @@ public class ReaderViewModel extends AndroidViewModel {
 
     public void loadBook(String uriString) {
         try {
-            Uri uri = Uri.parse(uriString);
-            ContentResolver contentResolver = getApplication().getContentResolver();
+            final Uri uri = Uri.parse(uriString);
+            final ContentResolver contentResolver = getApplication().getContentResolver();
 
             // 获取文件名
-            String fileName = "未知文件";
-            Cursor cursor = contentResolver.query(uri, null, null, null, null);
-            if (cursor != null && cursor.moveToFirst()) {
-                int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                if (nameIndex != -1) {
-                    fileName = cursor.getString(nameIndex);
+            final String fileName;
+            try (Cursor cursor = contentResolver.query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    fileName = nameIndex != -1 ? cursor.getString(nameIndex) : "未知文件";
+                } else {
+                    fileName = "未知文件";
                 }
-                cursor.close();
             }
 
             // 获取文件大小
-            long fileSize = 0;
+            final long fileSize;
             try (ParcelFileDescriptor pfd = contentResolver.openFileDescriptor(uri, "r")) {
-                if (pfd != null) {
-                    fileSize = pfd.getStatSize();
+                fileSize = (pfd != null) ? pfd.getStatSize() : 0;
+            }
+
+            final Book book = new Book(fileName, uriString);
+            book.setFileSize(fileSize);
+            book.setEncoding("UTF-8"); // 默认编码
+
+            new Thread(() -> saveBookAndParseChapters(book, uri)).start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveBookAndParseChapters(Book book, Uri uri) {
+        try {
+            List<Book> existingBooks = database.bookDao().getAllBooksSync();
+            Book matchedBook = null;
+            for (Book existing : existingBooks) {
+                if (existing.getTitle().equals(book.getTitle())) {
+                    matchedBook = existing;
+                    break;
                 }
             }
 
-            Book book = new Book(fileName, uriString);
-            book.setFileSize(fileSize);
+            int bookId;
+            if (matchedBook != null) {
+                book.setId(matchedBook.getId());
+                database.bookDao().updateBook(book);
+                database.bookDao().deleteChaptersByBookId(matchedBook.getId());
+                bookId = matchedBook.getId();
+            } else {
+                bookId = (int) database.bookDao().insertBook(book);
+                book.setId(bookId);
+            }
 
-            new Thread(() -> {
-                long bookId = database.bookDao().insertBook(book);
-                book.setId((int) bookId);
-                currentBook.postValue(book);
+            currentBook.postValue(book);
 
-                // 解析章节
-                List<TxtFileParser.ChapterInfo> chapterInfos = TxtFileParser.parseChaptersFromUri(uri, getApplication());
-                List<Chapter> chapterList = new ArrayList<>();
-                for (TxtFileParser.ChapterInfo info : chapterInfos) {
-                    Chapter chapter = new Chapter(
-                            (int) bookId,
-                            info.title,
-                            info.startPosition,
-                            info.endPosition,
-                            info.index
-                    );
-                    database.bookDao().insertChapter(chapter);
-                    chapterList.add(chapter);
-                }
-                chapters.postValue(chapterList); // 把解析后的章节列表同步到LiveData
-            }).start();
+            List<TxtFileParser.ChapterInfo> chapterInfos = TxtFileParser.parseChaptersFromUri(uri, getApplication());
+            List<Chapter> chapterList = new ArrayList<>();
+            for (TxtFileParser.ChapterInfo info : chapterInfos) {
+                Chapter chapter = new Chapter(
+                        bookId,
+                        info.title,
+                        info.startPosition,
+                        info.endPosition,
+                        info.index
+                );
+                database.bookDao().insertChapter(chapter);
+                chapterList.add(chapter);
+            }
+
+            chapters.postValue(chapterList);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -124,6 +150,15 @@ public class ReaderViewModel extends AndroidViewModel {
     }
 
     public void selectChapter(Chapter chapter) {
-        selectedChapter.setValue(chapter);
+        selectedChapter.postValue(chapter);
+    }
+
+    // 👉 新增两个外部调用方法（用于 Fragment 设置）
+    public void setCurrentBook(Book book) {
+        currentBook.setValue(book);
+    }
+
+    public void setChapters(List<Chapter> chapterList) {
+        chapters.setValue(chapterList);
     }
 }
