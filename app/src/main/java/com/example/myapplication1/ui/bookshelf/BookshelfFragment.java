@@ -1,7 +1,7 @@
 package com.example.myapplication1.ui.bookshelf;
 
 import android.os.Bundle;
-import android.util.Log;
+import android.util.Log; // 导入 Log 类
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,26 +34,26 @@ public class BookshelfFragment extends Fragment {
 
         setupRecyclerView();
         observeViewModel();
-        
+
         return root;
     }
-    
+
     private void setupRecyclerView() {
         bookAdapter = new BookAdapter();
         binding.recyclerBooks.setLayoutManager(new GridLayoutManager(getContext(), 3));
         binding.recyclerBooks.setAdapter(bookAdapter);
-        
+
         bookAdapter.setOnBookClickListener(book -> {
             // 选中书籍，跳转到阅读器界面
             bookshelfViewModel.selectBook(book);
 //            增加打印信息
             Log.d("BookshelfFragment", "Selected book: " + book.getTitle() + ", ID: " + book.getId() + ", FilePath: " + book.getFilePath());
             // 添加日志打印 LiveData 的值在导航前
-            Log.d("BookshelfFragment", "Selected book LiveData value before navigation: " + bookshelfViewModel.getSelectedBook().getValue());
+            // Log.d("BookshelfFragment", "Selected book LiveData value before navigation: " + bookshelfViewModel.getSelectedBook().getValue()); // 调试日志，可以保留或移除
             Navigation.findNavController(requireView()).navigate(R.id.nav_reader);
         });
     }
-    
+
     private void observeViewModel() {
         bookshelfViewModel.getBooks().observe(getViewLifecycleOwner(), books -> {
             if (books != null) {
@@ -69,5 +69,16 @@ public class BookshelfFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 添加日志，打印当前导航目的地的标签
+        if (Navigation.findNavController(requireView()).getCurrentDestination() != null) {
+            Log.d("BookshelfFragment", "Current destination label in onResume: " + Navigation.findNavController(requireView()).getCurrentDestination().getLabel());
+        } else {
+            Log.d("BookshelfFragment", "Current destination is null in onResume.");
+        }
     }
 }
