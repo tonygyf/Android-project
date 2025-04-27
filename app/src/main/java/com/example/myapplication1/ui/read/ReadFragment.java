@@ -10,8 +10,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.myapplication1.data.Book;
-
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -62,64 +60,22 @@ public class ReadFragment extends Fragment {
                 Log.d("ReadFragment", "Key: " + key + ", Value: " + getArguments().get(key));
             }
 
-            // 首先尝试从ViewModel获取选中的章节
-            Chapter selectedChapter = readerViewModel.getSelectedChapter().getValue();
-            
-            if (selectedChapter != null) {
-                // 如果ViewModel中有选中的章节，优先使用
-                Log.d("ReadFragment", "Using chapter from ViewModel: " + selectedChapter.getTitle());
-                currentChapter = selectedChapter;
-                currentBookId = currentChapter.getBookId();
-                
-                // 从ViewModel获取当前书籍以获取文件路径
-                Book currentBook = readerViewModel.getCurrentBook().getValue();
-                if (currentBook != null) {
-                    currentFilePath = currentBook.getFilePath();
-                    Log.d("ReadFragment", "Using file path from ViewModel: " + currentFilePath);
-                } else {
-                    // 如果ViewModel中没有书籍信息，则从参数中获取
-                    currentFilePath = getArguments().getString("filePath", "");
-                    Log.d("ReadFragment", "Using file path from arguments: " + currentFilePath);
-                }
-            } else {
-                // 如果ViewModel中没有选中的章节，则从参数中构建
-                Log.d("ReadFragment", "Building chapter from arguments");
-                currentChapter = new Chapter(
-                        getArguments().getInt("bookId"),
-                        getArguments().getString("title", ""),
-                        getArguments().getLong("startPosition"),
-                        getArguments().getLong("endPosition"),
-                        getArguments().getInt("chapterIndex")
-                );
-                currentChapter.setId(getArguments().getInt("chapterId"));
-                currentBookId = currentChapter.getBookId();
-                currentFilePath = getArguments().getString("filePath", "");
-            }
+            currentChapter = new Chapter(
+                    getArguments().getInt("bookId"),
+                    getArguments().getString("title", ""),
+                    getArguments().getLong("startPosition"),
+                    getArguments().getLong("endPosition"),
+                    getArguments().getInt("chapterIndex")
+            );
+            currentChapter.setId(getArguments().getInt("chapterId"));
+            currentBookId = currentChapter.getBookId();
+            currentFilePath = getArguments().getString("filePath", "");
 
             binding.textChapterTitle.setText(currentChapter.getTitle());
             loadTextContent();
         } else {
             // 添加日志说明未接收到 arguments
-            Log.d("ReadFragment", "No arguments received, trying to use ViewModel data");
-            
-            // 尝试从ViewModel获取数据
-            Chapter selectedChapter = readerViewModel.getSelectedChapter().getValue();
-            Book currentBook = readerViewModel.getCurrentBook().getValue();
-            
-            if (selectedChapter != null && currentBook != null) {
-                currentChapter = selectedChapter;
-                currentBookId = currentChapter.getBookId();
-                currentFilePath = currentBook.getFilePath();
-                
-                binding.textChapterTitle.setText(currentChapter.getTitle());
-                loadTextContent();
-                Log.d("ReadFragment", "Successfully loaded chapter from ViewModel: " + currentChapter.getTitle());
-            } else {
-                Log.e("ReadFragment", "No arguments and no ViewModel data available");
-                Toast.makeText(getContext(), "无法加载章节内容，请返回重试", Toast.LENGTH_SHORT).show();
-                // 返回上一页
-                Navigation.findNavController(requireView()).navigateUp();
-            }
+            Log.d("ReadFragment", "No arguments received.");
         }
     }
 
